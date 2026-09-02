@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RepoVault — Backup dos seus repositórios do GitHub</title>
+    <meta
+      name="description"
+      content="Salve links de repositórios do GitHub na sua conta e baixe tudo de uma vez, com envio opcional para o Google Drive."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo">RV</span>
+        <div>
+          <h1>RepoVault</h1>
+          <p class="tagline">Backup dos seus repositórios do GitHub</p>
+        </div>
+      </div>
+      <div class="session">
+        <div id="userBox" class="user-box hidden">
+          <img id="userPhoto" alt="" />
+          <span id="userName"></span>
+        </div>
+        <button id="loginBtn" class="btn btn-primary">Entrar com Google</button>
+        <button id="logoutBtn" class="btn btn-ghost hidden">Sair</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="signedOut" class="panel center">
+        <h2>Entre para começar</h2>
+        <p class="muted">
+          Seus links ficam salvos na sua conta (Firebase Authentication + Realtime Database).
+        </p>
+      </section>
+
+      <section id="signedIn" class="hidden">
+        <div class="panel">
+          <h2>Adicionar repositório</h2>
+          <form id="addForm" class="row">
+            <input
+              id="repoUrl"
+              type="text"
+              placeholder="https://github.com/usuario/repositorio"
+              autocomplete="off"
+              required
+            />
+            <button class="btn btn-primary" type="submit">Salvar link</button>
+          </form>
+          <p id="addError" class="error hidden"></p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Meus repositórios (<span id="repoCount">0</span>)</h2>
+            <div class="actions">
+              <label class="check">
+                <input id="driveToggle" type="checkbox" />
+                Enviar para o Google Drive
+              </label>
+              <button id="downloadAllBtn" class="btn btn-primary">Baixar todos</button>
+            </div>
+          </div>
+          <ul id="repoList" class="repo-list"></ul>
+          <p id="emptyState" class="muted">Nenhum repositório salvo ainda.</p>
+        </div>
+
+        <div class="panel">
+          <h2>Registro</h2>
+          <pre id="log" class="log"></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot muted">
+      Edite as credenciais no topo de <code>app.js</code>.
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
