@@ -10,17 +10,17 @@
  * ===================================================================== */
 
 const FIREBASE_CONFIG = {
-  apiKey: "COLE_SUA_FIREBASE_API_KEY",
-  authDomain: "SEU_PROJETO.firebaseapp.com",
-  databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
-  projectId: "SEU_PROJETO",
-  storageBucket: "SEU_PROJETO.appspot.com",
-  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
-  appId: "SEU_APP_ID",
+  apiKey: "AIzaSyAebDd0ZGbaTLGGSG6N3HP247gS7Qn1e_g",
+  authDomain: "repo-81f2f.firebaseapp.com",
+  databaseURL: "https://repo-81f2f-default-rtdb.firebaseio.com",
+  projectId: "repo-81f2f",
+  storageBucket: "repo-81f2f.firebasestorage.app",
+  messagingSenderId: "744680583759",
+  appId: "1:744680583759:web:a47c985c4ae08d5c7b703a",
 };
 
-const GOOGLE_DRIVE_API_KEY = "COLE_SUA_GOOGLE_DRIVE_API_KEY";
-const GOOGLE_OAUTH_CLIENT_ID = "COLE_SEU_OAUTH_CLIENT_ID.apps.googleusercontent.com";
+const GOOGLE_DRIVE_API_KEY = "AIzaSyDHkLh2vGgxUJpVo11o1kKqtH1DQ5Toeu4";
+const GOOGLE_OAUTH_CLIENT_ID = "271164112354-ikr1ch05fcv9astro58hvqp18f216mbs.apps.googleusercontent.com";
 const DRIVE_FOLDER_NAME = "RepoVault Backups";
 
 /* ===================== FIM DA CONFIGURAÇÃO ===================== */
