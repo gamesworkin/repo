@@ -292,18 +292,23 @@ function saveBlob(blob, fileName) {
 }
 
 // O GitHub (codeload) não envia cabeçalhos CORS, então o download passa por
-// um proxy no mesmo domínio deste site: /api/public/repo-zip?repo=owner/name
-const ZIP_PROXY = "/api/public/repo-zip";
+// um proxy. Se este app estiver hospedado em outro lugar (ex.: GitHub Pages),
+// o caminho relativo não existe lá e o GitHub responde 404 ("Site not found").
+// Por isso usamos a URL ABSOLUTA do proxy publicado no Lovable.
+// Troque abaixo se você hospedar o proxy em outro domínio.
+const ZIP_PROXY = "https://project--c48153c9-a9f2-4c94-a783-aea5b699c060.lovable.app/api/public/repo-zip";
 
 async function fetchRepoZip(repo) {
   const res = await fetch(`${ZIP_PROXY}?repo=${encodeURIComponent(repo.fullName)}`);
   if (!res.ok) {
-    throw new Error(`Falha ao baixar ${repo.fullName} (${res.status}: ${await res.text()})`);
+    const body = (await res.text()).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 160);
+    throw new Error(`Falha ao baixar ${repo.fullName} (${res.status}: ${body})`);
   }
   const branch = res.headers.get("X-Repo-Branch") || "main";
   const blob = await res.blob();
   return { blob, fileName: `${repo.owner}-${repo.name}-${branch}.zip` };
 }
+
 
 async function backupRepos(list) {
   const toDrive = ui.driveToggle.checked;
