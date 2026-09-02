@@ -291,14 +291,16 @@ function saveBlob(blob, fileName) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
+// O GitHub (codeload) não envia cabeçalhos CORS, então o download passa por
+// um proxy no mesmo domínio deste site: /api/public/repo-zip?repo=owner/name
+const ZIP_PROXY = "/api/public/repo-zip";
+
 async function fetchRepoZip(repo) {
-  const meta = await fetch(`https://api.github.com/repos/${repo.fullName}`);
-  if (!meta.ok) throw new Error(`GitHub ${meta.status} ao ler ${repo.fullName}`);
-  const info = await meta.json();
-  const branch = info.default_branch || "main";
-  const zipUrl = `https://codeload.github.com/${repo.fullName}/zip/refs/heads/${branch}`;
-  const res = await fetch(zipUrl);
-  if (!res.ok) throw new Error(`Falha ao baixar ${repo.fullName} (${res.status})`);
+  const res = await fetch(`${ZIP_PROXY}?repo=${encodeURIComponent(repo.fullName)}`);
+  if (!res.ok) {
+    throw new Error(`Falha ao baixar ${repo.fullName} (${res.status}: ${await res.text()})`);
+  }
+  const branch = res.headers.get("X-Repo-Branch") || "main";
   const blob = await res.blob();
   return { blob, fileName: `${repo.owner}-${repo.name}-${branch}.zip` };
 }
