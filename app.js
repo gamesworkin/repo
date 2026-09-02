@@ -10,17 +10,17 @@
  * ===================================================================== */
 
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyAebDd0ZGbaTLGGSG6N3HP247gS7Qn1e_g",
-  authDomain: "repo-81f2f.firebaseapp.com",
-  databaseURL: "https://repo-81f2f-default-rtdb.firebaseio.com",
-  projectId: "repo-81f2f",
-  storageBucket: "repo-81f2f.firebasestorage.app",
-  messagingSenderId: "744680583759",
-  appId: "1:744680583759:web:a47c985c4ae08d5c7b703a",
+  apiKey: "COLE_SUA_FIREBASE_API_KEY",
+  authDomain: "SEU_PROJETO.firebaseapp.com",
+  databaseURL: "https://SEU_PROJETO-default-rtdb.firebaseio.com",
+  projectId: "SEU_PROJETO",
+  storageBucket: "SEU_PROJETO.appspot.com",
+  messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+  appId: "SEU_APP_ID",
 };
 
-const GOOGLE_DRIVE_API_KEY = "AIzaSyDHkLh2vGgxUJpVo11o1kKqtH1DQ5Toeu4";
-const GOOGLE_OAUTH_CLIENT_ID = "271164112354-ikr1ch05fcv9astro58hvqp18f216mbs.apps.googleusercontent.com";
+const GOOGLE_DRIVE_API_KEY = "COLE_SUA_GOOGLE_DRIVE_API_KEY";
+const GOOGLE_OAUTH_CLIENT_ID = "COLE_SEU_OAUTH_CLIENT_ID.apps.googleusercontent.com";
 const DRIVE_FOLDER_NAME = "RepoVault Backups";
 
 /* ===================== FIM DA CONFIGURAÇÃO ===================== */
@@ -334,19 +334,70 @@ async function backupRepos(list) {
   ui.downloadAllBtn.disabled = repos.length === 0;
 }
 
+
+/* ------------------- Carregamento robusto do JSZip -------------------
+ * O <script> do CDN pode falhar (bloqueio de rede, offline, adblock).
+ * Aqui tentamos vários CDNs sob demanda antes de desistir. */
+const JSZIP_CDNS = [
+  "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",
+  "https://unpkg.com/jszip@3.10.1/dist/jszip.min.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js",
+];
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src;
+    s.async = true;
+    s.crossOrigin = "anonymous";
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`Falha ao carregar ${src}`));
+    document.head.appendChild(s);
+  });
+}
+
+let jszipPromise = null;
+async function ensureJSZip() {
+  if (typeof window.JSZip !== "undefined") return window.JSZip;
+  if (jszipPromise) return jszipPromise;
+
+  jszipPromise = (async () => {
+    for (const url of JSZIP_CDNS) {
+      try {
+        log(`Carregando JSZip de ${new URL(url).hostname}...`);
+        await loadScript(url);
+        if (typeof window.JSZip !== "undefined") {
+          log("JSZip carregado.");
+          return window.JSZip;
+        }
+      } catch (err) {
+        log(`JSZip indisponível em ${new URL(url).hostname}.`);
+      }
+    }
+    jszipPromise = null;
+    throw new Error("Não foi possível carregar o JSZip em nenhum CDN.");
+  })();
+
+  return jszipPromise;
+}
+
 // "Baixar todos": junta todos os repositórios em UM único arquivo .zip.
 async function backupAllAsSingleZip(list) {
   if (!list.length) return;
-  if (typeof JSZip === "undefined") {
-    log("JSZip não carregou; não foi possível gerar o zip único.");
-    return;
+
+  let JSZipCtor;
+  try {
+    JSZipCtor = await ensureJSZip();
+  } catch (err) {
+    log(`${err.message} Baixando os repositórios separadamente...`);
+    return backupRepos(list);
   }
 
   const toDrive = ui.driveToggle.checked;
   ui.downloadAllBtn.disabled = true;
   log(`Gerando zip único com ${list.length} repositório(s)${toDrive ? " + Drive" : ""}...`);
 
-  const bundle = new JSZip();
+  const bundle = new JSZipCtor();
   let added = 0;
 
   for (const repo of list) {
