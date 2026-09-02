@@ -334,4 +334,56 @@ async function backupRepos(list) {
   ui.downloadAllBtn.disabled = repos.length === 0;
 }
 
-ui.downloadAllBtn.addEventListener("click", () => backupRepos(repos));
+// "Baixar todos": junta todos os repositórios em UM único arquivo .zip.
+async function backupAllAsSingleZip(list) {
+  if (!list.length) return;
+  if (typeof JSZip === "undefined") {
+    log("JSZip não carregou; não foi possível gerar o zip único.");
+    return;
+  }
+
+  const toDrive = ui.driveToggle.checked;
+  ui.downloadAllBtn.disabled = true;
+  log(`Gerando zip único com ${list.length} repositório(s)${toDrive ? " + Drive" : ""}...`);
+
+  const bundle = new JSZip();
+  let added = 0;
+
+  for (const repo of list) {
+    try {
+      log(`Baixando ${repo.fullName}...`);
+      const { blob, fileName } = await fetchRepoZip(repo);
+      bundle.file(fileName, blob);
+      added += 1;
+      log(`Adicionado ao pacote: ${fileName} (${(blob.size / 1048576).toFixed(2)} MB)`);
+    } catch (err) {
+      log(`Erro em ${repo.fullName}: ${err.message}`);
+    }
+  }
+
+  if (!added) {
+    log("Nenhum repositório pôde ser baixado; zip não gerado.");
+    ui.downloadAllBtn.disabled = repos.length === 0;
+    return;
+  }
+
+  try {
+    log("Compactando pacote final...");
+    const stamp = new Date().toISOString().slice(0, 10);
+    const bundleName = `repovault-backup-${stamp}.zip`;
+    const bundleBlob = await bundle.generateAsync({ type: "blob" });
+    saveBlob(bundleBlob, bundleName);
+    log(`OK: ${bundleName} (${(bundleBlob.size / 1048576).toFixed(2)} MB, ${added} repositório(s))`);
+    if (toDrive) {
+      const uploaded = await uploadToDrive(bundleName, bundleBlob);
+      log(`Enviado ao Drive: ${uploaded.name}`);
+    }
+  } catch (err) {
+    log(`Erro ao gerar o zip único: ${err.message}`);
+  }
+
+  log("Backup concluído.");
+  ui.downloadAllBtn.disabled = repos.length === 0;
+}
+
+ui.downloadAllBtn.addEventListener("click", () => backupAllAsSingleZip(repos));
