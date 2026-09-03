@@ -64,8 +64,18 @@
               <button id="downloadAllBtn" class="btn btn-primary">Baixar todos</button>
             </div>
           </div>
+          <div class="search-row">
+            <input
+              id="searchInput"
+              type="search"
+              placeholder="Buscar por título, repositório ou descrição..."
+              autocomplete="off"
+            />
+            <button id="clearSearchBtn" class="btn btn-ghost btn-sm" type="button">Limpar</button>
+          </div>
           <ul id="repoList" class="repo-list"></ul>
           <p id="emptyState" class="muted">Nenhum repositório salvo ainda.</p>
+          <p id="noResults" class="muted hidden">Nenhum resultado para a busca.</p>
         </div>
 
         <div class="panel">
@@ -74,6 +84,27 @@
         </div>
       </section>
     </main>
+
+    <div id="editModal" class="modal hidden">
+      <div class="modal-card">
+        <h2>Editar link</h2>
+        <p id="editRepoName" class="muted"></p>
+        <form id="editForm" class="stack">
+          <label class="field">
+            <span>Título</span>
+            <input id="editTitle" type="text" placeholder="Ex.: Meu projeto principal" autocomplete="off" />
+          </label>
+          <label class="field">
+            <span>Descrição</span>
+            <textarea id="editDescription" rows="3" placeholder="Anotações sobre este repositório..."></textarea>
+          </label>
+          <div class="modal-actions">
+            <button type="button" id="editCancelBtn" class="btn btn-ghost">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <footer class="foot muted">
       Edite as credenciais no topo de <code>app.js</code>.

@@ -45,7 +45,31 @@ const ui = {
   downloadAllBtn: el("downloadAllBtn"),
   driveToggle: el("driveToggle"),
   log: el("log"),
+  searchInput: el("searchInput"),
+  clearSearchBtn: el("clearSearchBtn"),
+  noResults: el("noResults"),
+  editModal: el("editModal"),
+  editForm: el("editForm"),
+  editRepoName: el("editRepoName"),
+  editTitle: el("editTitle"),
+  editDescription: el("editDescription"),
+  editCancelBtn: el("editCancelBtn"),
 };
+
+let searchTerm = "";
+let editingId = null;
+
+function getVisibleRepos() {
+  const term = searchTerm.trim().toLowerCase();
+  if (!term) return repos;
+  return repos.filter((repo) =>
+    [repo.title, repo.fullName, repo.description, repo.owner, repo.name]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(term),
+  );
+}
 
 function log(message) {
   const time = new Date().toLocaleTimeString();
@@ -146,6 +170,8 @@ ui.addForm.addEventListener("submit", async (event) => {
       owner: parsed.owner,
       name: parsed.name,
       url: `https://github.com/${fullName}`,
+      title: fullName,
+      description: "",
       createdAt: Date.now(),
     });
     ui.repoUrl.value = "";
@@ -156,30 +182,50 @@ ui.addForm.addEventListener("submit", async (event) => {
 });
 
 function renderRepos() {
+  const visible = getVisibleRepos();
+
   ui.repoCount.textContent = String(repos.length);
   ui.emptyState.classList.toggle("hidden", repos.length > 0);
-  ui.downloadAllBtn.disabled = repos.length === 0;
+  ui.noResults.classList.toggle("hidden", repos.length === 0 || visible.length > 0);
+  ui.downloadAllBtn.disabled = visible.length === 0;
   ui.repoList.innerHTML = "";
 
-  repos.forEach((repo) => {
+  visible.forEach((repo) => {
     const li = document.createElement("li");
     li.className = "repo-item";
 
     const left = document.createElement("div");
+
     const link = document.createElement("a");
     link.href = repo.url;
     link.target = "_blank";
     link.rel = "noreferrer";
-    link.textContent = repo.fullName;
+    link.className = "repo-title";
+    link.textContent = repo.title || repo.fullName;
+    left.append(link);
+
     const meta = document.createElement("div");
     meta.className = "repo-meta";
-    meta.textContent = repo.createdAt
-      ? `adicionado em ${new Date(repo.createdAt).toLocaleDateString()}`
-      : "";
-    left.append(link, meta);
+    const parts = [];
+    if (repo.title && repo.title !== repo.fullName) parts.push(repo.fullName);
+    if (repo.createdAt) parts.push(`adicionado em ${new Date(repo.createdAt).toLocaleDateString()}`);
+    meta.textContent = parts.join(" · ");
+    left.append(meta);
+
+    if (repo.description) {
+      const desc = document.createElement("div");
+      desc.className = "repo-desc";
+      desc.textContent = repo.description;
+      left.append(desc);
+    }
 
     const right = document.createElement("div");
     right.className = "actions";
+
+    const edit = document.createElement("button");
+    edit.className = "btn btn-ghost btn-sm";
+    edit.textContent = "Editar";
+    edit.addEventListener("click", () => openEditModal(repo));
 
     const dl = document.createElement("button");
     dl.className = "btn btn-ghost btn-sm";
@@ -191,11 +237,69 @@ function renderRepos() {
     rm.textContent = "Remover";
     rm.addEventListener("click", () => reposRef.child(repo.id).remove());
 
-    right.append(dl, rm);
+    right.append(edit, dl, rm);
     li.append(left, right);
     ui.repoList.append(li);
   });
 }
+
+/* ----------------------------- Busca ------------------------------ */
+
+ui.searchInput.addEventListener("input", (event) => {
+  searchTerm = event.target.value;
+  renderRepos();
+});
+
+ui.clearSearchBtn.addEventListener("click", () => {
+  searchTerm = "";
+  ui.searchInput.value = "";
+  renderRepos();
+});
+
+/* ------------------------ Edição de link -------------------------- */
+
+function openEditModal(repo) {
+  editingId = repo.id;
+  ui.editRepoName.textContent = repo.fullName;
+  ui.editTitle.value = repo.title || "";
+  ui.editDescription.value = repo.description || "";
+  ui.editModal.classList.remove("hidden");
+  ui.editTitle.focus();
+}
+
+function closeEditModal() {
+  editingId = null;
+  ui.editModal.classList.add("hidden");
+}
+
+ui.editCancelBtn.addEventListener("click", closeEditModal);
+
+ui.editModal.addEventListener("click", (event) => {
+  if (event.target === ui.editModal) closeEditModal();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !ui.editModal.classList.contains("hidden")) closeEditModal();
+});
+
+ui.editForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!editingId || !reposRef) return;
+  const id = editingId;
+  const title = ui.editTitle.value.trim();
+  const description = ui.editDescription.value.trim();
+  try {
+    await reposRef.child(id).update({
+      title: title || null,
+      description: description || null,
+      updatedAt: Date.now(),
+    });
+    log(`Link atualizado: ${title || id}`);
+    closeEditModal();
+  } catch (err) {
+    log(`Não foi possível salvar a edição: ${err.message}`);
+  }
+});
 
 /* --------------------------- Google Drive -------------------------- */
 
@@ -331,7 +435,7 @@ async function backupRepos(list) {
   }
 
   log("Backup concluído.");
-  ui.downloadAllBtn.disabled = repos.length === 0;
+  ui.downloadAllBtn.disabled = getVisibleRepos().length === 0;
 }
 
 
@@ -414,7 +518,7 @@ async function backupAllAsSingleZip(list) {
 
   if (!added) {
     log("Nenhum repositório pôde ser baixado; zip não gerado.");
-    ui.downloadAllBtn.disabled = repos.length === 0;
+    ui.downloadAllBtn.disabled = getVisibleRepos().length === 0;
     return;
   }
 
@@ -434,7 +538,7 @@ async function backupAllAsSingleZip(list) {
   }
 
   log("Backup concluído.");
-  ui.downloadAllBtn.disabled = repos.length === 0;
+  ui.downloadAllBtn.disabled = getVisibleRepos().length === 0;
 }
 
-ui.downloadAllBtn.addEventListener("click", () => backupAllAsSingleZip(repos));
+ui.downloadAllBtn.addEventListener("click", () => backupAllAsSingleZip(getVisibleRepos()));
