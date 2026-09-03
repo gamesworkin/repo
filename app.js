@@ -54,10 +54,19 @@ const ui = {
   editTitle: el("editTitle"),
   editDescription: el("editDescription"),
   editCancelBtn: el("editCancelBtn"),
+  pagination: el("pagination"),
+  pageNumbers: el("pageNumbers"),
+  prevPageBtn: el("prevPageBtn"),
+  nextPageBtn: el("nextPageBtn"),
+  pageInfo: el("pageInfo"),
 };
 
 let searchTerm = "";
 let editingId = null;
+
+const PAGE_SIZE = 10;
+const MAX_PAGE_BUTTONS = 5;
+let currentPage = 1;
 
 function getVisibleRepos() {
   const term = searchTerm.trim().toLowerCase();
@@ -181,8 +190,59 @@ ui.addForm.addEventListener("submit", async (event) => {
   }
 });
 
+function renderPagination(totalItems, totalPages) {
+  const show = totalPages > 1;
+  ui.pagination.classList.toggle("hidden", !show);
+  ui.pageInfo.classList.toggle("hidden", totalItems === 0);
+
+  if (totalItems > 0) {
+    const first = (currentPage - 1) * PAGE_SIZE + 1;
+    const last = Math.min(currentPage * PAGE_SIZE, totalItems);
+    ui.pageInfo.textContent = `Mostrando ${first}–${last} de ${totalItems}`;
+  }
+
+  ui.pageNumbers.innerHTML = "";
+  if (!show) return;
+
+  const half = Math.floor(MAX_PAGE_BUTTONS / 2);
+  let start = Math.max(1, currentPage - half);
+  let end = Math.min(totalPages, start + MAX_PAGE_BUTTONS - 1);
+  start = Math.max(1, end - MAX_PAGE_BUTTONS + 1);
+
+  for (let page = start; page <= end; page += 1) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "page-btn" + (page === currentPage ? " page-btn-active" : "");
+    btn.textContent = String(page);
+    btn.addEventListener("click", () => {
+      currentPage = page;
+      renderRepos();
+    });
+    ui.pageNumbers.append(btn);
+  }
+
+  ui.prevPageBtn.disabled = currentPage === 1;
+  ui.nextPageBtn.disabled = currentPage === totalPages;
+}
+
+ui.prevPageBtn.addEventListener("click", () => {
+  if (currentPage > 1) {
+    currentPage -= 1;
+    renderRepos();
+  }
+});
+
+ui.nextPageBtn.addEventListener("click", () => {
+  currentPage += 1;
+  renderRepos();
+});
+
 function renderRepos() {
   const visible = getVisibleRepos();
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  const pageItems = visible.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   ui.repoCount.textContent = String(repos.length);
   ui.emptyState.classList.toggle("hidden", repos.length > 0);
@@ -190,7 +250,9 @@ function renderRepos() {
   ui.downloadAllBtn.disabled = visible.length === 0;
   ui.repoList.innerHTML = "";
 
-  visible.forEach((repo) => {
+  renderPagination(visible.length, totalPages);
+
+  pageItems.forEach((repo) => {
     const li = document.createElement("li");
     li.className = "repo-item";
 
@@ -247,12 +309,14 @@ function renderRepos() {
 
 ui.searchInput.addEventListener("input", (event) => {
   searchTerm = event.target.value;
+  currentPage = 1;
   renderRepos();
 });
 
 ui.clearSearchBtn.addEventListener("click", () => {
   searchTerm = "";
   ui.searchInput.value = "";
+  currentPage = 1;
   renderRepos();
 });
 
